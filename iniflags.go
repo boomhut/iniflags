@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	allowUnknownFlags    = flag.Bool("allowUnknownFlags", false, "Don't terminate the app if ini file contains unknown flags.")
-	allowMissingConfig   = flag.Bool("allowMissingConfig", false, "Don't terminate the app if the ini file cannot be read.")
-	config               = flag.String("config", "", "Path to ini config for using in go flags. May be relative to the current executable path.")
+	allowUnknownFlags    = flag.Bool("allowUnknownFlags", false, "Don't terminate the application if ini file contains unknown flags.")
+	allowMissingConfig   = flag.Bool("allowMissingConfig", false, "Don't terminate the application if the ini file cannot be read.")
+	config               = flag.String("config", "", "Path to ini config. May be relative to the current executable path.")
 	configUpdateInterval = flag.Duration("configUpdateInterval", 0, "Update interval for re-reading config file set via -config flag. Zero disables config file re-reading.")
-	dumpflags            = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the app into stdout in ini-compatible syntax and terminates the app.")
+	dumpflags            = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the application into stdout in ini-compatible syntax and terminates the app.")
 )
 
 var (
