@@ -7,7 +7,7 @@ Usage:
 
 ```bash
 
-go get -u -a github.com/vharitonsky/iniflags
+go get -u -a github.com/boomhut/iniflags
 ```
 
 main.go
@@ -17,7 +17,7 @@ package main
 import (
 	"flag"
 	...
-	"github.com/vharitonsky/iniflags"
+	"github.com/boomhut/iniflags"
 	...
 )
 
