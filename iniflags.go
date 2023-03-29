@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 )
 
 var (
@@ -255,6 +256,16 @@ func getArgsFromConfig(configPath string) (args []flagArg, ok bool) {
 	for {
 		lineNum++
 		line, err := r.ReadString('\n')
+		if err != nil {
+			panic(err)
+		}
+
+		// check if line is encoded in UTF-8
+		if !utf8.ValidString(line) {
+			logger.Printf("iniflags: invalid UTF-8 encoding at line %d of file [%s]", lineNum, configPath)
+			return nil, false
+		}
+
 		if err != nil && line == "" {
 			if err == io.EOF {
 				if len(multilineFA.Key) > 0 {
@@ -266,6 +277,7 @@ func getArgsFromConfig(configPath string) (args []flagArg, ok bool) {
 			logger.Printf("iniflags: error when reading file [%s] at line %d: [%s]", configPath, lineNum, err)
 			return nil, false
 		}
+
 		if lineNum == 1 {
 			line = stripBOM(line)
 		}
@@ -377,6 +389,13 @@ func openConfigFile(path string) (io.ReadCloser, error) {
 		}
 		return nil, err
 	}
+
+	// // check if file is properly formatted UTF-8
+	// if !utf8.ValidString(file) {
+	// 	logger.Printf("iniflags: config file at [%s] is not properly formatted UTF-8", path)
+	// 	return nil, err
+	// }
+
 	return file, nil
 }
 
