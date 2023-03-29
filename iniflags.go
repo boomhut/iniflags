@@ -163,6 +163,8 @@ func parseConfigFlags() (oldFlagValues map[string]string, ok bool) {
 	ok = true
 	oldFlagValues = make(map[string]string)
 	for _, arg := range parsedArgs {
+		logger.Printf("iniflags: setting flag [%s] to value [%s]", arg.Key, arg.Value)
+
 		f := flag.Lookup(arg.Key)
 		if f == nil {
 			logger.Printf("iniflags: unknown flag name=[%s] found at line [%d] of file [%s]", arg.Key, arg.LineNum, arg.FilePath)
