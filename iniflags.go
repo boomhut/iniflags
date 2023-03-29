@@ -459,9 +459,11 @@ func unquoteValue(val string, lineNum int, configPath string) (string, string, b
 	v = strings.Replace(v, "\\n", "\n", -1)
 	v = strings.Replace(v, "\\\\", "\\", -1)
 
+	logger.Printf("iniflags: unquoted value [%s]", v)
+
 	//to get the comment remove the value from the original value and get the trailing comment
 	comment := getTrailingComment(strings.Replace(val, fmt.Sprintf("%q", v), "", 1))
-
+	logger.Printf("iniflags: comment [%s]", comment)
 	return v, comment, true
 }
 
