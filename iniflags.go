@@ -256,15 +256,6 @@ func getArgsFromConfig(configPath string) (args []flagArg, ok bool) {
 	for {
 		lineNum++
 		line, err := r.ReadString('\n')
-		if err != nil {
-			panic(err)
-		}
-
-		// check if line is encoded in UTF-8
-		if !utf8.ValidString(line) {
-			logger.Printf("iniflags: invalid UTF-8 encoding at line %d of file [%s]", lineNum, configPath)
-			return nil, false
-		}
 
 		if err != nil && line == "" {
 			if err == io.EOF {
@@ -275,6 +266,12 @@ func getArgsFromConfig(configPath string) (args []flagArg, ok bool) {
 				break
 			}
 			logger.Printf("iniflags: error when reading file [%s] at line %d: [%s]", configPath, lineNum, err)
+			return nil, false
+		}
+
+		// check if line is encoded in UTF-8
+		if !utf8.ValidString(line) {
+			logger.Printf("iniflags: invalid UTF-8 encoding at line %d of file [%s]", lineNum, configPath)
 			return nil, false
 		}
 
