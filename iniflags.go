@@ -445,6 +445,16 @@ func dumpFlags() {
 }
 
 func escapeUsage(s string) string {
+	s = strings.Replace(s, "¹", "", -1)
+	s = strings.Replace(s, "²", "", -1)
+	s = strings.Replace(s, "³", "", -1)
+	s = strings.Replace(s, "⁴", "", -1)
+	s = strings.Replace(s, "⁵", "", -1)
+	s = strings.Replace(s, "⁶", "", -1)
+	s = strings.Replace(s, "⁷", "", -1)
+	s = strings.Replace(s, "⁸", "", -1)
+	s = strings.Replace(s, "⁹", "", -1)
+	s = strings.Replace(s, "⁰", "", -1)
 	return strings.Replace(s, "\n", "\n    # ", -1)
 }
 
