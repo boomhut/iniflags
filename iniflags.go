@@ -444,18 +444,16 @@ func dumpFlags() {
 	})
 }
 
+// escapeUsage escapes the usage string so it can be used as a comment in an ini file.
 func escapeUsage(s string) string {
-	s = strings.Replace(s, "¹", "", -1)
-	s = strings.Replace(s, "²", "", -1)
-	s = strings.Replace(s, "³", "", -1)
-	s = strings.Replace(s, "⁴", "", -1)
-	s = strings.Replace(s, "⁵", "", -1)
-	s = strings.Replace(s, "⁶", "", -1)
-	s = strings.Replace(s, "⁷", "", -1)
-	s = strings.Replace(s, "⁸", "", -1)
-	s = strings.Replace(s, "⁹", "", -1)
-	s = strings.Replace(s, "⁰", "", -1)
-	return strings.Replace(s, "\n", "\n    # ", -1)
+	// escape all the special characters that are not allowed. (tab, vertical tab, form feed, backspace, alert, backslash, double quote, superscript 2, superscript 3, superscript 1, superscript 0, superscript 4, superscript 5, superscript 6, superscript 7, superscript 8, superscript 9)
+	stringsToReplace := []string{"\t", "\v", "\f", "\b", "\a", "\\", "\"", "\u00B2", "\u00B3", "\u00B9", "\u2070", "\u2074", "\u2075", "\u2076", "\u2077", "\u2078", "\u2079"}
+	s = strings.Replace(s, "\n", "\n    # ", -1)
+	for _, str := range stringsToReplace {
+		s = strings.Replace(s, str, "", -1)
+	}
+
+	return s
 }
 
 func quoteValue(v string) string {

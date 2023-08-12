@@ -87,7 +87,7 @@ func TestGetArgsFromConfig(t *testing.T) {
 			}
 			expected = " comment"
 			if arg.Comment != expected {
-				t.Fatalf("Comment of 'var0' should be ' comment', got %q", expected, arg.Comment)
+				t.Fatalf("Comment of 'var0' should be '%s', got %q", expected, arg.Comment)
 			}
 			checkedVar0 = true
 		case "var1":
