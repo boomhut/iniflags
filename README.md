@@ -51,7 +51,11 @@ dev.ini
 
 ```bash
 
+# Run the app with flags set via command-line
 go run main.go -config dev.ini -flagX=foobar
+
+# Run compiled app with flags set via command-line
+/path/to/app -config dev.ini -flagX=foobar
 
 ```
 

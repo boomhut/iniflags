@@ -23,6 +23,7 @@ var (
 	config               = flag.String("config", "", "Path to ini config. May be relative to the current executable path.")
 	configUpdateInterval = flag.Duration("configUpdateInterval", 0, "Update interval for re-reading config file set via -config flag. Zero disables config file re-reading.")
 	dumpflags            = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the application into stdout in ini-compatible syntax and terminates the app.")
+	unsecure             = flag.Bool("unsecure", false, "Allow insecure communication with the server.")
 )
 
 var (
@@ -66,7 +67,7 @@ func Parse() {
 	Generation++
 	issueAllFlagChangeCallbacks()
 
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGHUP)
 	go sighupHandler(ch)
 
@@ -367,7 +368,23 @@ func getArgsFromConfig(configPath string) (args []flagArg, ok bool) {
 
 func openConfigFile(path string) (io.ReadCloser, error) {
 	if isHTTP(path) {
-		resp, err := http.Get(path)
+		var resp *http.Response
+		var err error
+		// check path if it is secure
+		if isSecure(path) {
+			// It's a https path, so no need to check if unsecure is set
+			resp, err = http.Get(path)
+		} else {
+			if !*unsecure {
+				logger.Printf("iniflags: cannot load config file at [%s]: unsecure communication is not allowed", path)
+				return nil, fmt.Errorf("unsecure communication is not allowed")
+			} else {
+				resp, err = http.Get(path)
+				// warn if unsecure is set and the path is not secure
+				logger.Printf("iniflags: unsecure communication with the server at [%s]", path)
+			}
+		}
+
 		if err != nil {
 			logger.Printf("iniflags: cannot load config file at [%s]: [%s]\n", path, err)
 			return nil, err
@@ -419,6 +436,10 @@ func combinePath(basePath, relPath string) (string, bool) {
 
 func isHTTP(path string) bool {
 	return strings.HasPrefix(strings.ToLower(path), "http://") || strings.HasPrefix(strings.ToLower(path), "https://")
+}
+
+func isSecure(path string) bool {
+	return strings.HasPrefix(strings.ToLower(path), "https://")
 }
 
 func getMissingFlags() map[string]bool {

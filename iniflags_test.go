@@ -176,3 +176,65 @@ func TestSetConfigUpdateInterval(t *testing.T) {
 		t.Fatal("SetConfigUpdateInterval failed to update global.")
 	}
 }
+
+func TestQuoteValue(t *testing.T) {
+	// Test that quoteValue returns unmodified string if quoting is not required.
+	input := "helloWorld"
+	res := quoteValue(input)
+	if res != input {
+		t.Fatalf("Expected %q, got %q", input, res)
+	}
+
+	// Test that quoteValue quotes strings with newlines.
+	input = "line\nbreak"
+	res = quoteValue(input)
+	expected := "\"line\\nbreak\""
+	if res != expected {
+		t.Fatalf("Expected %q, got %q", expected, res)
+	}
+}
+
+func TestCombinePathLocal(t *testing.T) {
+	// Test combinePath for a local file (non-http).
+	basePath := "c:/folder/config.ini"
+	relPath := "sub/conf.ini"
+	combined, ok := combinePath(basePath, relPath)
+	if !ok {
+		t.Fatalf("combinePath failed for local path")
+	}
+	// expected using path.Join (note: separator as "/" due to path.Join)
+	expected := "c:/folder/sub/conf.ini"
+	if combined != expected {
+		t.Fatalf("Expected %q, got %q", expected, combined)
+	}
+}
+
+func TestCombinePathHTTP(t *testing.T) {
+	// Test combinePath for HTTP paths.
+	basePath := "http://example.com/dir/config.ini"
+	relPath := "sub/conf.ini"
+	combined, ok := combinePath(basePath, relPath)
+	if !ok {
+		t.Fatalf("combinePath failed for HTTP path")
+	}
+	expected := "http://example.com/dir/sub/conf.ini"
+	if combined != expected {
+		t.Fatalf("Expected %q, got %q", expected, combined)
+	}
+}
+
+func TestStripBOM(t *testing.T) {
+	// Test that stripBOM correctly strips a BOM if present.
+	input := "\ufeffHello"
+	res := stripBOM(input)
+	if res != "Hello" {
+		t.Fatalf("Expected %q, got %q", "Hello", res)
+	}
+}
+
+// test dump flags
+func TestDumpFlags(t *testing.T) {
+	parsed = false
+	Parse()
+	dumpFlags()
+}
