@@ -27,10 +27,11 @@ var (
 )
 
 var (
-	flagChangeCallbacks = make(map[string][]FlagChangeCallback)
-	importStack         []string
-	parsed              bool
-	flagShorthands      = make(map[string]string) // Maps shorthand name to full flag name
+	flagChangeCallbacks   = make(map[string][]FlagChangeCallback)
+	importStack           []string
+	parsed                bool
+	flagShorthands        = make(map[string]string) // Maps shorthand name to full flag name
+	commandLineShorthands = make(map[string]bool)   // Tracks which shorthands are registered for command line use
 )
 
 // Generation is flags' generation number.
@@ -49,6 +50,9 @@ func Parse() {
 	if parsed {
 		logger.Panicf("iniflags: duplicate call to iniflags.Parse() detected")
 	}
+
+	// Handle command-line shorthands before calling flag.Parse()
+	handleCommandLineShorthands()
 
 	parsed = true
 	flag.Parse()
@@ -73,6 +77,60 @@ func Parse() {
 	go sighupHandler(ch)
 
 	go configUpdater()
+}
+
+// handleCommandLineShorthands processes command-line arguments and
+// replaces registered shorthands with their full flag names
+func handleCommandLineShorthands() {
+	if len(commandLineShorthands) == 0 {
+		return
+	}
+
+	args := make([]string, 0, len(os.Args))
+	args = append(args, os.Args[0])
+
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+
+		// Check if the argument is a shorthand flag
+		if len(arg) > 1 && arg[0] == '-' && !strings.HasPrefix(arg, "--") {
+			// Remove the leading dash
+			shortName := arg[1:]
+
+			// If there's an equals sign, split it
+			value := ""
+			hasValue := false
+			if pos := strings.Index(shortName, "="); pos >= 0 {
+				value = shortName[pos:]
+				shortName = shortName[:pos]
+				hasValue = true
+			}
+
+			// Check if it's a registered command-line shorthand
+			if fullName, exists := flagShorthands[shortName]; exists && commandLineShorthands[shortName] {
+				// Replace with full name
+				if hasValue {
+					args = append(args, "-"+fullName+value)
+				} else {
+					args = append(args, "-"+fullName)
+					// If the next arg doesn't start with a dash, it's probably the value
+					if i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "-") {
+						args = append(args, os.Args[i+1])
+						i++
+					}
+				}
+			} else {
+				// Not a registered shorthand or not for command line, pass through unchanged
+				args = append(args, arg)
+			}
+		} else {
+			// Not a shorthand flag, pass through unchanged
+			args = append(args, arg)
+		}
+	}
+
+	// Replace os.Args with the processed arguments
+	os.Args = args
 }
 
 func configUpdater() {
@@ -593,6 +651,18 @@ func RegisterShorthand(shorthand, fullName string) error {
 	}
 
 	flagShorthands[shorthand] = fullName
+	return nil
+}
+
+// RegisterCommandLineShorthand registers a shorthand that can be used on the command line.
+// The shorthand can be used both in config files and as a command-line flag.
+func RegisterCommandLineShorthand(shorthand, fullName string) error {
+	err := RegisterShorthand(shorthand, fullName)
+	if err != nil {
+		return err
+	}
+
+	commandLineShorthands[shorthand] = true
 	return nil
 }
 
