@@ -149,3 +149,112 @@ func main() {
 	iniflags.Parse()
 }
 ```
+
+# iniflags
+
+A Go package that extends the standard `flag` package to support reading flags from INI config files.
+
+## Installation
+
+```bash
+go get github.com/yourusername/iniflags
+```
+
+## Basic Usage
+
+1. Import the package in your Go code:
+```go
+import (
+    "flag"
+    "github.com/yourusername/iniflags"
+)
+```
+
+2. Define flags using the standard flag package:
+```go
+var (
+    addr = flag.String("addr", ":8080", "TCP address to listen to")
+    dbPath = flag.String("dbPath", "/tmp/mydb", "Path to the database directory")
+)
+```
+
+3. Call `iniflags.Parse()` instead of `flag.Parse()`:
+```go
+func main() {
+    iniflags.Parse()
+    
+    // Now use flags as usual
+    fmt.Printf("addr=%s, dbPath=%s\n", *addr, *dbPath)
+}
+```
+
+## Config File Format
+
+The config file uses INI format:
+
+```ini
+# This is a comment
+addr = :9090
+dbPath = /var/db/myapp
+
+#import /etc/myapp/common.ini
+```
+
+## Command Line Options
+
+- `-config=/path/to/config.ini`: Specify the path to the config file
+- `-configUpdateInterval=10s`: Automatically reload config file every 10 seconds
+- `-dumpflags`: Print all flags with their values in INI format
+- `-allowMissingConfig`: Don't terminate if the config file is missing
+- `-allowUnknownFlags`: Don't terminate if the config file contains unknown flags
+
+## Features
+
+1. **Automatic Config Reloading**: Reload configuration when `-configUpdateInterval` is set or when SIGHUP is received
+2. **Flag Change Callbacks**: Register callbacks to be called when flag values change
+3. **Import Directive**: Include other config files using `#import` directive
+4. **HTTP Support**: Load config files from HTTP/HTTPS URLs
+5. **Shortcuts**: Register shorthand names for flags
+
+## Advanced Usage
+
+### Flag change notifications
+
+```go
+iniflags.OnFlagChange("addr", func() {
+    // This will be called when addr flag value is initialized and/or changed
+    fmt.Printf("addr changed to %s\n", *addr)
+})
+```
+
+### Setting default config file
+
+```go
+// Must be called before iniflags.Parse()
+iniflags.SetConfigFile("/etc/myapp/default.ini")
+```
+
+### Registering flag shorthands
+
+```go
+// Register "a" as shorthand for "addr"
+iniflags.RegisterShorthand("a", "addr")
+```
+
+// Registering flag shorthands
+
+```go
+// Register "a" as shorthand for "addr" (for config files only)
+iniflags.RegisterShorthand("a", "addr")
+
+// Register "v" as shorthand for "version" (for both config files and command line)
+iniflags.RegisterCommandLineShorthand("v", "version")
+```
+
+With the command line shorthand registered, you can use it in your commands:
+
+```bash
+# These two are equivalent:
+/path/to/app -version=1.0.0
+/path/to/app -v=1.0.0
+```
