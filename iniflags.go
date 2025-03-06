@@ -663,8 +663,8 @@ func RegisterShorthand(shorthand, fullName string) error {
 		return fmt.Errorf("iniflags: shorthand [%s] already registered for flag [%s]", shorthand, existing)
 	}
 	// or if the shorthand is already know as full name for another flag
-	if existing, exists := flagShorthands[fullName]; exists {
-		return fmt.Errorf("iniflags: shorthand [%s] already registered for flag [%s]", shorthand, existing)
+	if flag.Lookup(shorthand) != nil {
+		return fmt.Errorf("iniflags: shorthand [%s] already registered as a flag name", shorthand)
 	}
 
 	flagShorthands[shorthand] = fullName
