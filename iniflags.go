@@ -30,6 +30,7 @@ var (
 	flagChangeCallbacks = make(map[string][]FlagChangeCallback)
 	importStack         []string
 	parsed              bool
+	flagShorthands      = make(map[string]string) // Maps shorthand name to full flag name
 )
 
 // Generation is flags' generation number.
@@ -167,6 +168,13 @@ func parseConfigFlags() (oldFlagValues map[string]string, ok bool) {
 	for _, arg := range parsedArgs {
 
 		f := flag.Lookup(arg.Key)
+		if f == nil {
+			// Check if the key is a shorthand
+			if fullName, isShorthand := flagShorthands[arg.Key]; isShorthand {
+				f = flag.Lookup(fullName)
+				arg.Key = fullName // Update the key to use the full name
+			}
+		}
 		if f == nil {
 			logger.Printf("iniflags: unknown flag name=[%s] found at line [%d] of file [%s]", arg.Key, arg.LineNum, arg.FilePath)
 			if !*allowUnknownFlags {
@@ -567,6 +575,25 @@ func SetConfigUpdateInterval(interval time.Duration) {
 		logger.Panicf("iniflags: SetConfigUpdateInterval() must be called before Parse()")
 	}
 	*configUpdateInterval = interval
+}
+
+// RegisterShorthand registers a shorthand for a flag.
+// The shorthand can be used in config files instead of the full flag name.
+func RegisterShorthand(shorthand, fullName string) error {
+	if parsed {
+		return fmt.Errorf("iniflags: RegisterShorthand() must be called before Parse()")
+	}
+
+	if flag.Lookup(fullName) == nil {
+		return fmt.Errorf("iniflags: cannot register shorthand [%s] for non-existing flag [%s]", shorthand, fullName)
+	}
+
+	if existing, exists := flagShorthands[shorthand]; exists {
+		return fmt.Errorf("iniflags: shorthand [%s] already registered for flag [%s]", shorthand, existing)
+	}
+
+	flagShorthands[shorthand] = fullName
+	return nil
 }
 
 // Logger is a slimmed-down version of the log.Logger interface, which only includes the methods we use.
