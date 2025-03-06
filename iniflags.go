@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -18,12 +19,21 @@ import (
 )
 
 var (
-	allowUnknownFlags    = flag.Bool("allowUnknownFlags", false, "Don't terminate the application if ini file contains unknown flags.")
-	allowMissingConfig   = flag.Bool("allowMissingConfig", false, "Don't terminate the application if the ini file cannot be read.")
-	config               = flag.String("config", "", "Path to ini config. May be relative to the current executable path.")
-	configUpdateInterval = flag.Duration("configUpdateInterval", 0, "Update interval for re-reading config file set via -config flag. Zero disables config file re-reading.")
-	dumpflags            = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the application into stdout in ini-compatible syntax and terminates the app.")
-	unsecure             = flag.Bool("unsecure", false, "Allow insecure communication with the server.")
+	allowUnknownFlags      = flag.Bool("allowUnknownFlags", false, "Don't terminate the application if ini file contains unknown flags.")
+	allowMissingConfig     = flag.Bool("allowMissingConfig", false, "Don't terminate the application if the ini file cannot be read.")
+	config                 = flag.String("config", "", "Path to ini config. May be relative to the current executable path.")
+	configUpdateInterval   = flag.Duration("configUpdateInterval", 0, "Update interval for re-reading config file set via -config flag. Zero disables config file re-reading.")
+	dumpflags              = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the application into stdout in ini-compatible syntax and terminates the app.")
+	unsecure               = flag.Bool("unsecure", false, "Allow insecure communication with the server.")
+	originalUsage          = flag.Usage // Store the original usage function
+	flagsToExcludeFromDump = map[string]bool{
+		"config":               true,
+		"dumpflags":            true,
+		"allowUnknownFlags":    true,
+		"allowMissingConfig":   true,
+		"configUpdateInterval": true,
+		"unsecure":             true,
+	}
 )
 
 var (
@@ -50,6 +60,9 @@ func Parse() {
 	if parsed {
 		logger.Panicf("iniflags: duplicate call to iniflags.Parse() detected")
 	}
+
+	// Set custom usage function to include shorthands
+	flag.Usage = customUsage
 
 	// Handle command-line shorthands before calling flag.Parse()
 	handleCommandLineShorthands()
@@ -525,7 +538,7 @@ func getMissingFlags() map[string]bool {
 
 func dumpFlags() {
 	flag.VisitAll(func(f *flag.Flag) {
-		if f.Name != "config" && f.Name != "dumpflags" {
+		if _, exclude := flagsToExcludeFromDump[f.Name]; !exclude {
 			fmt.Printf("%s = %s  # %s\n", f.Name, quoteValue(f.Value.String()), escapeUsage(f.Usage))
 		}
 	})
@@ -680,4 +693,65 @@ var logger Logger = log.New(os.Stderr, "", log.LstdFlags)
 
 func SetLogger(l Logger) {
 	logger = l
+}
+
+// customUsage displays the standard flag usage message along with registered shorthands
+func customUsage() {
+	// First call the original usage function
+	originalUsage()
+
+	// Display shorthand information if any exist
+	if len(flagShorthands) > 0 {
+		// Create a map to collect all shorthands for each flag
+		flagToShorthands := make(map[string][]string)
+
+		// Group shorthands by their full flag name
+		for short, full := range flagShorthands {
+			flagToShorthands[full] = append(flagToShorthands[full], short)
+		}
+
+		// Only print the header if we have shorthands to show
+		if len(flagToShorthands) > 0 {
+			fmt.Fprintf(flag.CommandLine.Output(), "\nRegistered flag shorthands:\n")
+
+			// Find the maximum length for alignment
+			maxLen := 0
+			for full := range flagToShorthands {
+				if len(full) > maxLen {
+					maxLen = len(full)
+				}
+			}
+
+			// Sort the flags for consistent output
+			flags := make([]string, 0, len(flagToShorthands))
+			for full := range flagToShorthands {
+				flags = append(flags, full)
+			}
+			sort.Strings(flags)
+
+			// Print each flag with its shorthands
+			for _, full := range flags {
+				shorts := flagToShorthands[full]
+				sort.Strings(shorts)
+
+				shortList := strings.Join(shorts, ", ")
+				cmdLine := ""
+				for _, s := range shorts {
+					if commandLineShorthands[s] {
+						cmdLine = " (command-line)"
+						break
+					}
+				}
+
+				fmt.Fprintf(flag.CommandLine.Output(), "  -%s%*s -[%s]%s\n",
+					full, maxLen-len(full)+1, "", shortList, cmdLine)
+			}
+		}
+	}
+}
+
+// ExcludeFlagFromDump excludes the flag from the output of the dumpflags command.
+// This is useful for sensitive flags that should not be exposed in the output.
+func ExcludeFlagFromDump(flagName string) {
+	flagsToExcludeFromDump[flagName] = true
 }
