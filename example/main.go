@@ -23,6 +23,10 @@ func main() {
 	// Register a shorthand for config files only
 	iniflags.RegisterShorthand("l", "logLevel")
 
+	// Register multiple shorthands for the same flag
+	iniflags.RegisterShorthand("d", "dbPath")
+	iniflags.RegisterShorthand("db", "dbPath")
+
 	// Register a shorthand for both config files and command line
 	iniflags.RegisterCommandLineShorthand("v", "version")
 
