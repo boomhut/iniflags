@@ -24,7 +24,7 @@ var (
 	config                 = flag.String("config", "", "Path to ini config. May be relative to the current executable path.")
 	configUpdateInterval   = flag.Duration("configUpdateInterval", 0, "Update interval for re-reading config file set via -config flag. Zero disables config file re-reading.")
 	dumpflags              = flag.Bool("dumpflags", false, "Dumps values for all flags defined in the application into stdout in ini-compatible syntax and terminates the app.")
-	unsecure               = flag.Bool("unsecure", false, "Allow insecure communication with the server.")
+	unsecure               = flag.Bool("unsecure", false, "Allow unsecure communication with the server when loading config file via http.")
 	originalUsage          = flag.Usage // Store the original usage function
 	flagsToExcludeFromDump = map[string]bool{
 		"config":               true,
